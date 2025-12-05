@@ -42,6 +42,7 @@ FROM transactions
 WHERE refund_item IS NULL
 GROUP BY DATE_FORMAT(purchase_time, '%Y-%m')
 ORDER BY month;
+-- EXPLANATION This query groups all sccuessful purchases by month to understand how many valid sales happened each month. Refunds are filtered out using refund_item is null. The goal is to analyze monthly customer activity and sales trends.
 
 -- 2) How many stores receive at least 5 orders/transactions in October 2020?
 SELECT store_id,
@@ -53,6 +54,8 @@ WHERE purchase_time >= '2020-10-01'
   AND refund_item IS NULL
 GROUP BY store_id
 HAVING COUNT(*) >= 5;
+-- EXPLANATION This query checks the store performance during a specific month.we filter transcations based on th date range and count the number of orders each store received.Only those stores meet or exceed the threshold of 5orders are selected.
+
 
 -- 3) For each store, shortest interval (in minutes) from purchase to refund time
 SELECT
@@ -61,6 +64,8 @@ SELECT
 FROM transactions
 WHERE refund_item IS NOT NULL
 GROUP BY store_id;
+-- EXPLANATION We calculate how long each refunded transcation took from purchase to refund time. TIMESTAMPDIFF() is used to find the difference in minutes. For each store we take the minimum refund duration, Indicating the fastest refund processing time.
+
 
 -- 4) Gross transaction value of every store’s first order
 WITH first_order AS (
@@ -75,6 +80,8 @@ SELECT store_id, gross_transaction_value, purchase_time
 FROM first_order
 WHERE rn = 1
 ORDER BY store_id;
+-- EXPLANATION In this we find the very first order placed at each store based on purchase_time. Using ranking ROW_NUMBER , identitfy the earliest transcation and return its order value.
+
 
 -- 5) Most popular item_name that buyers order on their FIRST purchase
 WITH first_purchase AS (
@@ -93,6 +100,8 @@ WHERE fp.rn = 1
 GROUP BY i.item_name
 ORDER BY first_purchase_count DESC
 LIMIT 1;
+-- EXPLANATION Every buyers first non refunded purchase is identified and the item they bought is extracted. Then we count how many buyers bought each item as their first purchase. The most frequently occuring item is considered the most popular first purchase.
+
 
 -- 6) Create a flag indicating whether the refund can be processed (within 72 hours)
 SELECT
@@ -103,6 +112,8 @@ SELECT
     ELSE 'not_processed'
   END AS refund_flag
 FROM transactions;
+-- EXPLANATION A refund considered 'processed' only if the time difference between purchase and refund is <= 72 hours.
+
 
 -- 7) Create a rank by buyer_id and filter for only the second purchase per buyer (ignore refunds)
 WITH ranked AS (
@@ -115,6 +126,9 @@ WITH ranked AS (
 SELECT *
 FROM ranked
 WHERE purchase_rank = 2;
+-- EXPLANATION Using window functions, each buyes valid purchases are sorted by purchase time. ROW_NUMBER() assigns a rank to each transcations, and the query extracts only the second purchase.
+
+
 
 -- 8) Find the second transaction time per buyer (don’t use MIN/MAX; include all transactions)
 WITH ordered_txn AS (
@@ -128,6 +142,8 @@ SELECT buyer_id,
        purchase_time AS second_purchase_time
 FROM ordered_txn
 WHERE rn = 2;
+--EXPLANATION This query identifies the second transcations of every buyer based purely on chronological order. It used ROW_NUMBER() to rank all the purchases and select the one with rank = 2.
+
 
 -- note 
 -- In this excercise we used SQL to analyze a small retail transcation dataset. We explored purchase patterns, refund behaviour and customer buying trends. By filtering, grouping and ranking data, we indentified monthly ourchase counts, store performance and fastest refund intervals.
